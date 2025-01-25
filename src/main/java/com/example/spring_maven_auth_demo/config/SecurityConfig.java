@@ -2,54 +2,53 @@ package com.example.spring_maven_auth_demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.example.spring_maven_auth_demo.service.UserDetailsServiceImpl;
+import com.example.spring_maven_auth_demo.utility.JwtRequestFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final JwtRequestFilter jwtRequestFilter;
     private final UserDetailsServiceImpl userDetailsService;
 
-    public SecurityConfig(UserDetailsServiceImpl userDetailsService) {
+    public SecurityConfig(JwtRequestFilter jwtRequestFilter,
+                         UserDetailsServiceImpl userDetailsService) {
+        this.jwtRequestFilter = jwtRequestFilter;
         this.userDetailsService = userDetailsService;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) 
+        throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/h2-console/**", "/error").permitAll()
+                .requestMatchers("/", "/login", "/authenticate", "/static/**").permitAll()
                 .requestMatchers("/api/documents/public").permitAll()
-                .requestMatchers("/api/documents/secured").hasAnyRole("ADMIN", "DIRECTOR", "EMPLOYEE")
+                .requestMatchers("/api/documents/secured").hasAnyRole("ADMIN", "DIRECTOR", "MANAGER", "EMPLOYEE")
                 .anyRequest().authenticated()
             )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .loginProcessingUrl("/login")
-                .defaultSuccessUrl("/", true) // Redirect to home after login
-                .failureUrl("/login?error=true")
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .logout(logout -> logout
-                .logoutSuccessUrl("/login")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-            )
-            .exceptionHandling(ex -> ex
-                .accessDeniedPage("/access-denied")
-            )
-            .userDetailsService(userDetailsService)
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")
-            )
-            .headers(headers -> headers
-                .frameOptions(frame -> frame.disable())
-            );
+            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+            .userDetailsService(userDetailsService);
 
         return http.build();
     }

@@ -23,6 +23,11 @@ public class User {
     
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    public User orElseThrow(Object object) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'orElseThrow'");
+    }
 }
 
 
