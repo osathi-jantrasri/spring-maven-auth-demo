@@ -9,6 +9,6 @@ public class LoginController {
     
     @GetMapping("/login")
     public String showLoginPage(Model model) {
-        return "login"; // Should match template filename without .html
+        return "login"; 
     }
 }

@@ -25,5 +25,15 @@
             Invalid username or password!
         </div>
     </div>
+    <div th:if="${param.logout}">
+        You have been logged out!
+    </div>
+    <div>
+        <br>
+        <br>
+        <br>
+        <br>
+        <button onclick="location.href='/api/documents/public'">view public document</button>
+    </div>
 </body>
 </html>
